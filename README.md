@@ -7,7 +7,7 @@
 [![CI](https://github.com/api-freaks/apifreaks-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/api-freaks/apifreaks-mcp/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-16A34A)](https://github.com/api-freaks/apifreaks-mcp/blob/main/LICENSE)
 
-The official [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server for [APIFreaks](https://apifreaks.com). Add it to Claude, Cursor, Windsurf, or any MCP-compatible client and your AI can query live weather, WHOIS, DNS, SSL, domain availability / reputation / typosquatting, IP geolocation and threat intel, currency, commodities, screenshots, PDFs, VAT/IBAN/SWIFT, email and phone validation, geocoding, and more.
+The official [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server for [APIFreaks](https://apifreaks.com). Add it to Claude, Cursor, Windsurf, or any MCP-compatible client and your AI can query live weather, WHOIS, DNS, SSL, domain availability / reputation / typosquatting, IP geolocation and threat intel, currency, commodities, screenshots, PDFs, VAT/IBAN/SWIFT, email validation, disposable-email checks, and phone validation, geocoding, and more.
 
 **What can you ask once it's connected?**
 
@@ -84,7 +84,7 @@ Hyphens and underscores are interchangeable (`user-agent` and `user_agent` both 
 | `whois` | Domain, IP, ASN, history, reverse, bulk |
 | `dns` | Live lookup, history, reverse, bulk |
 | `scraper` | Static HTML scrape and JS-rendered scrape |
-| `email-validation` | Single and bulk email validation |
+| `email-validation` | Validation and disposable checks (single + bulk) |
 | `phone-validation` | Single and bulk phone validation |
 | `ssl` | Live certificate and full chain |
 | `domain` | Availability, suggestions, bulk, subdomain, reputation, typosquatting |
@@ -401,14 +401,16 @@ Extract HTML or structured fields from a URL. Static mode first; JS rendering on
 
 ---
 
-### Email Validation (`email-validation`) — 2 tools
+### Email Validation (`email-validation`) — 4 tools
 
-Deliverability, syntax, domain, and optional IP enrichment.
+Deliverability, syntax, domain, optional IP enrichment, and disposable-provider checks.
 
 | Tool | Description |
 |---|---|
 | `email_validate` | Validate a single email address |
-| `email_bulk_validate` | Validate up to 10 email addresses in one request |
+| `email_bulk_validate` | Validate up to 100 email addresses in one request |
+| `email_disposable_check` | Check whether one address is throwaway, free, spam-listed, or role-based, and whether its domain has mail servers |
+| `email_bulk_disposable_check` | Run the disposable check on up to 100 addresses in one request |
 
 ---
 

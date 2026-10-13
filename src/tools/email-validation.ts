@@ -17,6 +17,10 @@ const EmailEntry = z.object({
   ip: z.string().optional().describe(IP_DESC),
 });
 
+const NonBlankEmail = z.string().refine((value) => value.trim().length > 0, {
+  message: "emails must not contain blank entries",
+});
+
 export function register(server: McpServer, apiKey: string): void {
   server.registerTool(
     "email_validate",
@@ -60,15 +64,15 @@ export function register(server: McpServer, apiKey: string): void {
     {
       title: "Bulk Email Validation",
       description:
-        "Validate up to 10 email addresses in one request. Each address is checked independently, " +
+        "Validate up to 100 email addresses in one request. Each address is checked independently, " +
         "so one failure does not drop the rest of the batch. " +
         "The response is 'emailResponse': an array of the same per-email result as 'email_validate'.",
       inputSchema: z.object({
         emails: z
           .array(EmailEntry)
-          .max(10)
+          .max(100)
           .describe(
-            'List of email objects (max 10). Each object must include "email"; "name" and "ip" are optional. Example: [{"email":"user@example.com"},{"email":"admin@example.org","ip":"8.8.8.8"}]',
+            'List of email objects (max 100). Each object must include "email"; "name" and "ip" are optional. Example: [{"email":"user@example.com"},{"email":"admin@example.org","ip":"8.8.8.8"}]',
           ),
       }),
       annotations: READ_ONLY,
@@ -85,6 +89,67 @@ export function register(server: McpServer, apiKey: string): void {
         apiKey,
         {},
         { emailData },
+        "POST",
+      );
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify(data) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    "email_disposable_check",
+    {
+      title: "Disposable Email Checker",
+      description:
+        "Check whether one email address comes from a throwaway provider, whether its domain resolves " +
+        "and has mail servers, and whether it is a free-provider, spam-listed, or role-based address. " +
+        "A malformed address still returns a normal result: validSyntax is false, and domain contains only " +
+        "name plus validDomain=false. account and dns are omitted when validSyntax is false. " +
+        "domain.disposable is true for throwaway providers, domain.free for free providers, domain.spam when spam-listed, " +
+        "and domain.validDomain when the domain resolves. account.role is true for a shared or role mailbox. " +
+        "dns.mxRecord lists mail exchangers; dns.aRecord lists A records. Either DNS array may be absent.",
+      inputSchema: z.object({
+        email: z.string().describe(EMAIL_DESC),
+      }),
+      annotations: READ_ONLY,
+    },
+    async ({ email }) => {
+      const data = await callApi(ENDPOINTS.EMAIL_DISPOSABLE, apiKey, {
+        email,
+      });
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify(data) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    "email_bulk_disposable_check",
+    {
+      title: "Bulk Disposable Email Checker",
+      description:
+        "Run the same checks as 'email_disposable_check' against up to 100 email addresses in one request. " +
+        "The response is 'disposableEmailResponse': one result per submitted address, in request order, " +
+        "using the same schema as the single check. A malformed address never fails the batch " +
+        "(validSyntax and domain.validDomain are false). A blank or whitespace-only entry rejects the whole request.",
+      inputSchema: z.object({
+        emails: z
+          .array(NonBlankEmail)
+          .min(1)
+          .max(100)
+          .describe(
+            'Email addresses to check (max 100). Blank or whitespace-only entries are rejected. Example: ["john@microsoft.com","test@mailinator.com"]',
+          ),
+      }),
+      annotations: READ_ONLY,
+    },
+    async ({ emails }) => {
+      const data = await callApi(
+        ENDPOINTS.EMAIL_DISPOSABLE_BULK,
+        apiKey,
+        {},
+        { emails },
         "POST",
       );
       return {
