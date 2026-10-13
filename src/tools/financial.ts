@@ -124,8 +124,10 @@ export function register(server: McpServer, apiKey: string): void {
       title: "SWIFT/BIC Code Lookup",
       description:
         "Look up an 8- or 11-character SWIFT/BIC code and return one bank record: " +
-        "the code itself (8-character input is padded to 11 with XXX), bank name, " +
-        "the 4-character bank prefix, branch address, city, country name, and ISO country code. " +
+        "the code itself (8-character input is padded to 11 with XXX), bankName (full legal name), " +
+        "the 4-character bank prefix, branch address, city, country name, and ISO country code, " +
+        "plus institType ('FIIN' financial or 'NFIN' non-financial). " +
+        "branchName and postalCode may be present or empty. " +
         "Headquarters and branch codes are both supported. " +
         "Wrong length returns 400; an unknown code returns 404. " +
         "If you do not have a code, use 'financial_swift_finder' to drill down country → bank → city → codes.",
@@ -198,7 +200,9 @@ export function register(server: McpServer, apiKey: string): void {
         "Validate an IBAN against country-specific format, length, and checksum rules. " +
         "Returns whether it is valid (false is still HTTP 200, not an error), the submitted IBAN, " +
         "per-check flags, an optional BBAN checksum (unknown means that country does not support BBAN checks), " +
-        "and bank/SEPA metadata — BIC, bank name, codes, country, city, address, account, and SEPA eligibility. " +
+        "and bank/SEPA metadata (bank_data) — BIC, bank name, codes, country, city, address, account, " +
+        "SEPA eligibility, plus optional branch_name, instit_type ('FIIN'/'NFIN'), and postal_code " +
+        "(those three may be empty when not available). " +
         "Most bank fields are null when the IBAN is structurally invalid or bank data is not resolvable. " +
         "Missing iban returns 400. " +
         "Use 'financial_supported_country_info' if you need to confirm IBAN coverage first.",

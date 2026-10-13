@@ -88,6 +88,8 @@ export const ENDPOINTS = {
   // Email validation
   EMAIL_VALIDATION_SINGLE: "/v1.0/email-validation/single",
   EMAIL_VALIDATION_BULK: "/v1.0/email-validation/bulk",
+  EMAIL_DISPOSABLE: "/v1.0/email/disposable",
+  EMAIL_DISPOSABLE_BULK: "/v1.0/email/disposable/bulk",
 
   // Phone validation
   PHONE_VALIDATION: "/v1.0/phone/validation",
