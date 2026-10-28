@@ -6,11 +6,12 @@ import { CommodityIntradayInterval } from "../enums.js";
 import { READ_ONLY, type Params } from "../constants.js";
 
 const UPDATE_INTERVAL_DESC =
-  "Each symbol has its own updateInterval: PER_SECOND, PER_MINUTE, PER_10_MINUTES, " +
-  "PER_HOUR, PER_DAY, PER_WEEK, or PER_MONTH. Read it with 'commodity_symbol_info' or 'commodity_symbols'. " +
+  "Each symbol has its own updateInterval. The live catalog uses PER_SECOND, PER_MINUTE, PER_10_MINUTES, " +
+  "PER_DAY, PER_WEEK, PER_MONTH, and PER_6_MONTHS. The symbols reference also lists PER_HOUR, " +
+  "which no current symbol uses. Read the value with 'commodity_symbol_info' or 'commodity_symbols'. " +
   "Price responses do not include that cadence. The latest-rates endpoint refreshes on a rolling ~1 minute cadence, " +
   "but a symbol's price only moves as often as its updateInterval " +
-  "(XAU is PER_SECOND; World Bank series such as NG-EU are PER_MONTH).";
+  "(XAU is PER_SECOND; NG-EU is PER_MONTH; household electricity such as ELEC-HH-BE is PER_6_MONTHS).";
 
 const SYMBOL_DESC =
   "Comma-separated commodity symbols (e.g. 'XAU,XAG,WTIOIL-SPOT'). Case-insensitive. " +
@@ -27,7 +28,8 @@ const RESOLVED_TO_DESC =
   "A symbol with exactly one close match is answered under that symbol, and its unresolved entry includes resolvedTo.";
 
 const MONTHLY_OHLC_DESC =
-  "Symbols with updateInterval PER_MONTH only have a closing price — open, high, and low come back as 0.";
+  "Symbols with updateInterval PER_MONTH or PER_6_MONTHS are dated on the first of the month, " +
+  "and open, high, and low equal close. ";
 
 export function register(server: McpServer, apiKey: string): void {
   server.registerTool(
@@ -37,10 +39,13 @@ export function register(server: McpServer, apiKey: string): void {
       description:
         "List the 520+ supported commodity symbols across Metals, Energy, Agriculture, Industrial, " +
         "Raw Materials, Oils and Meals, Textiles, Meats, Poultry, and Livestock. " +
-        "Each entry includes symbol, name, optional description (may be empty), category, " +
+        "Each entry includes symbol, name, optional description, category, " +
         "status ('active' or 'inactive'), updateInterval " +
-        "(PER_SECOND, PER_MINUTE, PER_10_MINUTES, PER_HOUR, PER_DAY, PER_WEEK, or PER_MONTH), " +
+        "(PER_SECOND, PER_MINUTE, PER_10_MINUTES, PER_DAY, PER_WEEK, PER_MONTH, or PER_6_MONTHS; " +
+        "the reference also lists PER_HOUR), " +
         "optional exchange, currency (code, name, symbol), and unit (symbol, name). " +
+        "A delivery month also includes contract, deliveryMonth, expiresAt, and underlying " +
+        "(the continuous futures symbol, e.g. 'WTIOIL-FUT'). " +
         "Inactive symbols stay listed with a deprecationDate: latest rates are unavailable, " +
         "and historical rates remain available up to that date. Symbols are never reused. " +
         "Pass underlying (e.g. 'WTIOIL-FUT') to list the delivery months currently listed for that contract.",
@@ -76,8 +81,9 @@ export function register(server: McpServer, apiKey: string): void {
       description:
         "Validate a commodity symbol and return its metadata from the symbols catalog: " +
         "name, optional description, category, status, updateInterval " +
-        "(PER_SECOND, PER_MINUTE, PER_10_MINUTES, PER_HOUR, PER_DAY, PER_WEEK, or PER_MONTH), " +
+        "(PER_SECOND, PER_MINUTE, PER_10_MINUTES, PER_DAY, PER_WEEK, PER_MONTH, or PER_6_MONTHS), " +
         "optional exchange, optional deprecationDate, currency (code, name, symbol), and unit (symbol, name). " +
+        "A delivery month also includes contract, deliveryMonth, expiresAt, and underlying. " +
         "Use this instead of 'commodity_symbols' when you already have a symbol. " +
         "If status is 'inactive', latest rates are unavailable and historical rates stop at deprecationDate. " +
         "Delivery months for a futures contract are listed by 'commodity_symbols' with underlying set to the continuous symbol.",
@@ -222,7 +228,6 @@ export function register(server: McpServer, apiKey: string): void {
         "If a symbol has no rate on the requested date, the rate object's date is the last earlier day that has a price. " +
         "If every symbol is valid but none has a price on or before the date, the request returns 404. " +
         MONTHLY_OHLC_DESC +
-        " For those symbols the rate date snaps to the first day of the month. " +
         "Delivery-month symbols (e.g. WTIOIL-FUT-DEC27) have history from October 2026, and close is the exchange daily settlement, " +
         "updated when the final figure differs from the preliminary one. " +
         "Use the continuous symbol (e.g. WTIOIL-FUT) for older futures history. " +
@@ -299,7 +304,6 @@ export function register(server: McpServer, apiKey: string): void {
         "When several symbols are requested, a symbol is left out of any date it has no price for. Gaps are not filled forward. " +
         "A symbol counts as resolved if it appears on at least one date. " +
         MONTHLY_OHLC_DESC +
-        " Those entries are keyed by the first day of the month. " +
         "Delivery-month symbols (e.g. WTIOIL-FUT-DEC27) return one row per trading day from October 2026, " +
         "and close is the exchange daily settlement. An expired contract keeps that history up to expiry. " +
         "Use the continuous symbol (e.g. WTIOIL-FUT) for longer futures history. " +
